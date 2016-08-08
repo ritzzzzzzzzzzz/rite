@@ -1,0 +1,273 @@
+//main program
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace empp
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            vehicledb vh = new vehicledb();  
+            int c;
+            do
+            {
+                Console.WriteLine("! for view, 2 for booking");
+                c = Convert.ToInt32(Console.ReadLine());
+                switch (c)
+                {
+                    case 1:
+                        Console.WriteLine("give type of vehicle");
+                        string type =Console.ReadLine();
+                        List<vehicle> listt = vh.viewd(type);
+                        foreach (vehicle objj in listt)
+                        {
+                            Console.WriteLine("vehicle id is "+objj.Id);
+                            Console.WriteLine("Stock available "+objj.Num);
+                        }
+                        break;
+                    case 2:
+                        Console.WriteLine("enter the id of vehicle");
+                        int id1 =Convert.ToInt32(Console.ReadLine());
+                        Console.WriteLine("enter the number of vehicle to be booked");
+                        int num = Convert.ToInt32(Console.ReadLine());
+                        Console.WriteLine("give your address");
+                        string add = Console.ReadLine();
+                        booking oj = new booking(id1, num, add);
+                        int s = vh.add(oj);
+                        Console.WriteLine("booking id is "+s);
+                        break;
+                }
+            } while (c < 5);
+
+        }
+    }
+}
+
+
+
+//interface ivehicle
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace empp
+{
+    interface Ivehicle
+    {
+      int book_id
+        {
+            get;
+            set;
+        }
+        int Id
+        {
+            get;
+            set;
+        }
+        int NumberofVehicles
+        {
+            get;
+            set;
+        }
+        string Address
+        {
+            get;
+            set;
+        }
+    }
+}
+
+
+
+//vehicle_db
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Data.SqlClient;
+using System.Data;
+namespace empp
+{
+   public class vehicledb
+    {
+        string s11 = @"Data Source=inchnilpdb02\mssqlserver1;Initial Catalog=CHN12_MMS73_TEST;User ID=mms73user;Password=mms73user";
+        
+            
+        
+        public List<vehicle> viewd(string type)
+        {
+            SqlConnection con = new SqlConnection(s11);
+            con.Open();
+            SqlCommand cmd = new SqlCommand();
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Connection = con;
+            cmd.CommandText = "sp_details";
+            List<vehicle> listt = new List<vehicle>();
+            cmd.Parameters.AddWithValue("@type", type);
+            SqlDataReader dr = cmd.ExecuteReader();
+            while (dr.Read())
+            {
+                int id1 =Convert.ToInt32(dr[0].ToString());
+                int number= Convert.ToInt32(dr[2].ToString());
+                vehicle obj = new vehicle(id1, number);
+                listt.Add(obj);
+
+            }
+            return listt;
+        }
+        public int add(booking obj)
+        {
+            SqlConnection con = new SqlConnection(s11);
+            con.Open();
+            SqlCommand cmd = new SqlCommand();
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Connection = con;
+            cmd.CommandText = "sp_add";
+            
+            cmd.Parameters.AddWithValue("@book_id", 0);
+            cmd.Parameters.AddWithValue("@id", obj.Id);
+            cmd.Parameters.AddWithValue("@vehicles", obj.NumberofVehicles);
+            cmd.Parameters.AddWithValue("@address1", obj.Address);
+            cmd.Parameters["@book_id"].Direction = ParameterDirection.Output;
+            int s = cmd.ExecuteNonQuery();
+            con.Close();
+            if (s > 0)
+
+                return Convert.ToInt32(cmd.Parameters["@book_id"].Value);
+            else
+                return s;
+            }
+            
+        }
+
+    }
+
+
+
+//vehicle.cs
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace empp
+{
+   public class vehicle
+    {
+        int id, num;
+        string type;
+        public int Id
+        {
+            get { return id; }
+            set { id = value; }
+        }
+        public int Num
+        {
+            get { return num; }
+            set { num = value; }
+        }
+        public string Type
+        {
+            get
+            {
+                return type;
+            }
+                set
+                    { type = value; }
+            }
+      
+    public vehicle(int id1,int num1)
+    {
+            id = id1;
+           
+            num = num1;
+    }
+
+    }
+}
+
+
+//booking
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace empp
+{
+   public class booking:Ivehicle
+    {
+      
+            int Book_id,id,booked;
+        string addess;
+        public int book_id
+        {
+            get { return Book_id; }
+            set { Book_id = value; }
+        }
+        public int Id
+        {
+            get { return id; }
+            set { id = value; }
+        }
+        public int NumberofVehicles
+        {
+            get { return booked; }
+            set { booked = value; }
+        }
+        public string Address
+        {
+            get { return addess; }
+            set { addess = value; }
+        }
+        public booking(int vehicle1,int booked_vehicles,string address11)
+        {
+           id = vehicle1;
+            booked = booked_vehicles;
+            addess = address11;
+        }
+    }
+}
+
+
+//sql queries
+
+
+create table vehicle(id int identity(1,1) primary key,type varchar(30),num1 int)
+create table booking(book_id int identity(1,1) primary key,id int references vehicle(id),vehicles int,address1 varchar(30) )
+insert into vehicle values('scoda',20);
+insert into vehicle values('tata',20);
+insert into vehicle values('tvs',20);
+insert into vehicle values('honda',20);
+alter proc sp_details(@type varchar(30))
+as
+begin
+select * from vehicle where type=@type
+end
+select* from vehicle
+select* from booking
+delete from booking where id=1
+alter proc sp_add(@book_id int out,@id int, @vehicles int,@address1 varchar(30))
+as
+begin
+insert into booking values(@id,@vehicles,@address1)
+set @book_id=SCOPE_IDENTITY();
+update vehicle set num1=num1-@vehicles where id=@id
+end
+alter vehicle set num1=num1-1 where id=1;
+
+select v.* from booking b  cross join vehicle v  where v.id != b.id
